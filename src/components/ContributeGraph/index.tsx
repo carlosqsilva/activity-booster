@@ -1,53 +1,32 @@
-import { createEffect, createSignal, For, Show } from "solid-js";
-import { produce } from "solid-js/store";
+import { createEffect, For, Show } from "solid-js";
 import debounce from "debounce";
 
-import { store, setStore, createPoints, points, setPoints } from "./state";
-import { letterMap } from "./utils";
+import {
+  store,
+  setStore,
+  createPoints,
+  setPoints,
+  points,
+  type CreatePointsOptions,
+} from "./state";
 import { InputRange } from "./InputRange";
 import { InputCheckbox } from "./InputCheckbox";
 import { InputText } from "./InputText";
-import { defined } from "../../utils";
+import { createColorRangeFunction } from "./utils";
 
 export function Form() {
-  const handleMessageChange = debounce((value?: string) => {
-    const letters = value?.trimEnd().toLowerCase().split("") ?? [];
-
-    if (letters.length === 0) {
-      setPoints("data", createPoints());
-      return null;
-    }
-
-    setPoints(
-      "data",
-      produce((points) => {
-        let offset = 7;
-
-        for (const letter of letters) {
-          const positions = letterMap[letter];
-
-          if (!positions) continue;
-          if (positions === "empty") {
-            offset += 3 * 7;
-            continue;
-          }
-
-          for (const position of positions) {
-            const newPosition = offset + position;
-            if (newPosition > points.length - 1) break;
-            points[offset + position].commits = 30;
-          }
-          offset += 6 * 7;
-        }
-
-        return points;
-      }),
-    );
+  const debounceUpdate = debounce((options: CreatePointsOptions) => {
+    setPoints("data", createPoints(options));
   }, 300);
 
-  const updatePoints = debounce(() => {}, 300);
-
-  createEffect(() => {});
+  createEffect(() => {
+    debounceUpdate({
+      maxCommits: store.maxCommits,
+      hasMessage: store.hasMessage,
+      message: store.message,
+      noWeekends: store.noWeekends,
+    });
+  });
 
   return (
     <div class="flex flex-col gap-4">
@@ -64,7 +43,7 @@ export function Form() {
         <Show when={store.hasMessage}>
           <InputText
             name="message"
-            onChange={(_, value) => handleMessageChange(value)}
+            onChange={(name, value) => setStore(name, value)}
             placeHolder="Write a awesome message!"
           />
         </Show>
@@ -74,7 +53,7 @@ export function Form() {
           name="noWeekends"
           disabled={store.hasMessage}
           checked={store.noWeekends}
-          onChange={([name, state]) => setStore(name, state)}
+          onChange={(name, state) => setStore(name, state)}
         />
 
         <InputRange
@@ -115,7 +94,7 @@ export function Form() {
         <InputText
           name="repository"
           onChange={(name, value) => setStore(name, value)}
-          placeHolder="ex: "
+          placeHolder="ex: git@github.com:<USERNAME>/<REPO>.git"
           label={
             <>
               Your repository url https or ssh{" "}
@@ -124,15 +103,38 @@ export function Form() {
           }
         />
 
-        <button class="btn btn-success" type="button">
-          <span class="text-lg">Create Activity Repository</span>
-        </button>
+        <div class="flex gap-4">
+          <button class="btn btn-success flex-1" type="button">
+            <span class="text-lg">Create Activity Repository</span>
+          </button>
+
+          <button
+            class="btn btn-ghost"
+            type="button"
+            onClick={() => {
+              debounceUpdate(store);
+              debounceUpdate.flush();
+            }}
+          >
+            🎲
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 function ContributionGraph() {
+  let getColor = (_: number): string | null => null;
+  createEffect(() => {
+    const maxCommits = store.hasMessage ? 10 : store.maxCommits;
+    getColor = createColorRangeFunction(1, maxCommits, [
+      "#008000",
+      "#38b000",
+      "#70e000",
+    ]);
+  });
+
   return (
     <div class="grid grid-flow-col grid-rows-7 gap-[2px]">
       <div />
@@ -146,16 +148,8 @@ function ContributionGraph() {
         {(item) => (
           <div class="tooltip" data-tip={item.date}>
             <div
-              class="h-[10px] w-[10px] rounded-sm"
-              style={{ ...(defined(item.color) && { background: item.color }) }}
-              // classList={{
-              //   "bg-gray-500/50": item.commits === 0,
-              //   "bg-green-500/30": item.commits > 0 && item.commits <= 5,
-              //   "bg-green-500/50": item.commits > 5 && item.commits <= 10,
-              //   "bg-green-500/60": item.commits > 10 && item.commits <= 15,
-              //   "bg-green-500/70": item.commits > 15 && item.commits <= 20,
-              //   "bg-[#70e000]": item.commits > 20 && item.commits <= 30,
-              // }}
+              class="h-[10px] w-[10px] rounded-sm bg-gray-200/20"
+              style={{ background: getColor(item.commits) ?? undefined }}
             />
           </div>
         )}

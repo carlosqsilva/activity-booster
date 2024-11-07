@@ -3,6 +3,7 @@ export function createColorRangeFunction(
   max: number,
   colors: string[],
 ) {
+  // console.log("here");
   if (min >= max) {
     return (_: number) => colors[0];
   }
