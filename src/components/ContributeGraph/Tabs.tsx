@@ -8,10 +8,12 @@ import {
 interface TabsProps {
   name: string;
   onChange: (value: string) => void;
+  selected: string;
 }
 
 interface ContextValues {
   name: string;
+  selected: string;
   onChange: (ev: Event & { target: HTMLInputElement }) => void;
 }
 
@@ -20,6 +22,7 @@ const context = createContext<ContextValues>();
 export const Tabs: ParentComponent<TabsProps> = (props) => {
   const value = {
     name: props.name,
+    selected: props.selected,
     onChange: (ev: Event & { target: HTMLInputElement }) =>
       props.onChange(ev.target.value),
   };
@@ -51,6 +54,7 @@ export const TabItem: ParentComponent<TabItemProps> = (props) => {
         class="tab"
         aria-label={props.label}
         onChange={value?.onChange}
+        checked={props.value === value?.selected}
       />
       <div role="tabpanel" class="tab-content pt-8">
         {props.children}
