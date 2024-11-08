@@ -6,6 +6,14 @@ export default {
   },
   plugins: [require("@tailwindcss/typography"), require("daisyui")],
   daisyui: {
-    themes: ["light", "synthwave"],
+    themes: [
+      "synthwave",
+      {
+        custom: {
+          ...require("daisyui/src/theming/themes").synthwave,
+          success: "#38b000",
+        },
+      },
+    ],
   },
 };

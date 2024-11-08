@@ -7,7 +7,7 @@ const { title } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en" data-theme="synthwave">
+<html lang="en" data-theme="custom">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="description" content="Astro description" />
@@ -16,7 +16,7 @@ const { title } = Astro.props;
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 	</head>
-	<body>
+	<body class="py-1 min-h-screen">
 		<slot />
 	</body>
 </html>
@@ -32,19 +32,19 @@ const { title } = Astro.props;
 			white 60%
 		);
 	}
-	html {
-		font-family: system-ui, sans-serif;
-		background: #13151a;
+
+	body {
+  	background-image: url(/bg-grid.png);
+    background: radial-gradient(
+      100% 100% at 50% 100%,
+      rgb(27, 0, 76) 15%,
+      rgba(2, 6, 23, 0.8) 90%,
+      rgba(2, 6, 23, 0) 100%
+    ), url(/bg-grid.png);
 	}
-	code {
-		font-family:
-			Menlo,
-			Monaco,
-			Lucida Console,
-			Liberation Mono,
-			DejaVu Sans Mono,
-			Bitstream Vera Sans Mono,
-			Courier New,
-			monospace;
-	}
+
+	[data-theme="custom"] .btn[disabled] {
+	   --tw-bg-opacity: 1;
+	   --tw-text-opacity: 0.8;
+  }
 </style>

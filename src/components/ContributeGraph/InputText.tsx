@@ -6,6 +6,8 @@ interface InputTextProps<T extends string> {
   onChange: (name: T, value: string) => void;
   placeHolder?: string;
   label?: JSX.Element;
+  helpText?: JSX.Element;
+  required?: boolean;
 }
 
 export const InputText: Component<InputTextProps<any>> = (props) => {
@@ -14,16 +16,21 @@ export const InputText: Component<InputTextProps<any>> = (props) => {
       <Show when={defined(props.label)}>
         <div class="label">
           <span class="label-text">{props.label}</span>
-          {/* <span class="label-text-alt">Top Right label</span> */}
         </div>
       </Show>
       <input
         type="text"
+        required={props.required}
         class="input input-bordered w-full"
         placeholder={props.placeHolder}
         name={props.name}
         onInput={(ev) => props.onChange(props.name, ev.target.value)}
       />
+      <Show when={defined(props.helpText)}>
+        <div class="label">
+          <span class="label-text-alt">{props.helpText}</span>
+        </div>
+      </Show>
     </label>
   );
 };

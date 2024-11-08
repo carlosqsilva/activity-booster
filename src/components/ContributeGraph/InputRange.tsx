@@ -1,4 +1,4 @@
-import type { Component, JSX } from "solid-js";
+import { Show, type Component, type JSX } from "solid-js";
 import { defined } from "../../utils";
 
 interface InputRangeProps<T extends string>
@@ -6,6 +6,7 @@ interface InputRangeProps<T extends string>
   name: T;
   onChange?: (name: T, value: number) => void;
   label?: JSX.Element;
+  helpText?: JSX.Element;
 }
 
 export const InputRange: Component<InputRangeProps<any>> = (props) => {
@@ -27,6 +28,11 @@ export const InputRange: Component<InputRangeProps<any>> = (props) => {
         disabled={props.disabled}
         onInput={(ev) => props.onChange?.(props.name, Number(ev.target.value))}
       />
+      <Show when={defined(props.helpText)}>
+        <div class="label">
+          <span class="label-text-alt">{props.helpText}</span>
+        </div>
+      </Show>
     </label>
   );
 };

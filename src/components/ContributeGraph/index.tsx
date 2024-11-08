@@ -1,4 +1,4 @@
-import { createEffect, For, Show } from "solid-js";
+import { createEffect, createSignal, For, Show } from "solid-js";
 import debounce from "debounce";
 
 import {
@@ -8,6 +8,8 @@ import {
   setPoints,
   points,
   type CreatePointsOptions,
+  createRepo,
+  MESSAGE_COMMITS,
 } from "./state";
 import { InputRange } from "./InputRange";
 import { InputCheckbox } from "./InputCheckbox";
@@ -28,11 +30,23 @@ export function Form() {
     });
   });
 
+  const [loading, setLoading] = createSignal(false);
+  const handleSubmit = async (e: SubmitEvent) => {
+    e.preventDefault();
+
+    setLoading(true);
+    createRepo(points.data, store).finally(() => {
+      setLoading(false);
+    });
+  };
+
   return (
     <div class="flex flex-col gap-4">
-      <div class="-ml-8 flex flex-col gap-5">
+      <div class="-ml-8">
         <ContributionGraph />
+      </div>
 
+      <form class="flex flex-col gap-5" onSubmit={handleSubmit}>
         <InputCheckbox
           label="Write a Custom Message"
           name="hasMessage"
@@ -65,10 +79,12 @@ export function Form() {
               Maximum number of commits per day: <b>{store.maxCommits}</b>
             </>
           }
+          helpText={<>☝️High values takes longer export</>}
         />
 
         <div class="flex gap-4">
           <InputText
+            required
             name="userName"
             onChange={(name, value) => setStore(name, value)}
             placeHolder="In doubt run 'git config get user.name'"
@@ -80,6 +96,7 @@ export function Form() {
           />
 
           <InputText
+            required
             name="userEmail"
             onChange={(name, value) => setStore(name, value)}
             placeHolder="In doubt run 'git config get user.email'"
@@ -97,20 +114,31 @@ export function Form() {
           placeHolder="ex: git@github.com:<USERNAME>/<REPO>.git"
           label={
             <>
-              Your repository url https or ssh{" "}
+              Your repository URL{" "}
               <div class="badge badge-secondary">Optional</div>
             </>
           }
         />
 
         <div class="flex gap-4">
-          <button class="btn btn-success flex-1" type="button">
-            <span class="text-lg">Create Activity Repository</span>
+          <button
+            type="submit"
+            class="btn btn-success btn-wide flex-1"
+            disabled={loading()}
+          >
+            <Show when={loading()}>
+              <span class="loading loading-spinner" />
+              Creating repository Archive
+            </Show>
+            <Show when={!loading()}>
+              <span class="text-lg">Create Activity Repository</span>
+            </Show>
           </button>
 
           <button
             class="btn btn-ghost"
             type="button"
+            disabled={store.hasMessage}
             onClick={() => {
               debounceUpdate(store);
               debounceUpdate.flush();
@@ -119,7 +147,7 @@ export function Form() {
             🎲
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
@@ -127,7 +155,7 @@ export function Form() {
 function ContributionGraph() {
   let getColor = (_: number): string | null => null;
   createEffect(() => {
-    const maxCommits = store.hasMessage ? 10 : store.maxCommits;
+    const maxCommits = store.hasMessage ? MESSAGE_COMMITS : store.maxCommits;
     getColor = createColorRangeFunction(1, maxCommits, [
       "#008000",
       "#38b000",
