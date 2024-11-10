@@ -1,65 +1,79 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import { Form } from '../components/ContributeGraph';
+import Layout from "../layouts/Layout.astro";
+import { App } from "../components/ContributeGraph";
 ---
 
 <Layout title="Activity Booster">
   <!-- <a class="btn btn-lg">Login with Github</a> -->
 
   <header class="text-center mt-10">
-		<h1>Activity <span class="text-gradient">Booster</span></h1>
+    <h1>Activity <span class="text-gradient">Booster</span></h1>
   </header>
 
-	<main class="container max-w-3xl mx-auto flex flex-col">
-	  <Form client:only="solidjs" />
+  <main class="container max-w-3xl mx-auto flex flex-col">
+    <App client:only="solidjs" />
 
-		<article class="prose max-w-none prose-h2:my-4 mt-14">
-		  <h2>How it works?</h2>
-			<p>This tool runs entirely in your browser. It creates a Git repository that, when pushed to your GitHub account, will update your activity graph. Please note that it may take several minutes for GitHub to reflect these changes.</p>
-		  <h2>How to push to my Github account?</h2>
-			<p>First create and download your repo activity archive, and follow the steps bellow:</p>
+    <article class="prose max-w-none prose-h2:my-4 mt-14">
+      <h2>How it works?</h2>
+      <p>
+        This tool runs entirely in your browser. It creates a Git repository
+        that, when pushed to your GitHub account, will update your activity
+        graph. Please note that it may take several minutes for GitHub to
+        reflect these changes.
+      </p>
+      <h2>How to push to my Github account?</h2>
+      <p>
+        First create and download your repo activity archive, and follow the
+        steps bellow:
+      </p>
 
-     	<div class="mockup-code not-prose">
+      <div class="mockup-code not-prose">
         <pre data-prefix="$"><code>unzip activity-repo.zip -d REPO</code></pre>
         <pre data-prefix="$"><code>cd REPO</code></pre>
-        <pre data-prefix="$"><code>gh repo create REPO --private --push --source .</code></pre>
+        <pre
+          data-prefix="$"><code>gh repo create REPO --private --push --source .</code></pre>
       </div>
 
       <h2>Why is not working?</h2>
-      <p>If you follow the steps above and made the repository private you need to enable <b>Private contributions</b> in your Github profile.</p>
-		</article>
+      <p>
+        If you follow the steps above and made the repository private you need
+        to enable <b>Private contributions</b> in your Github profile.
+      </p>
+    </article>
 
-		<footer class="group mt-20 py-10 text-base text-center flex-1">
-		  Made with <span class="group-hover:text-red-600 transition-all duration-300">♥️</span> by <a class="link" href="https://github.com/carlosqsilva">Carlos Silva</a> in 🇧🇷
-		  <div class="flex justify-center mt-10">
-				<a href="https://www.buymeacoffee.com/carlossilva" target="_blank">
-					<img
-					  src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
-						alt="Buy Me A Coffee"
-						style="height: 48px !important;width: 180px !important;"
-						class="group-hover:scale-110 duration-500 transition-transform"
-						/>
-				</a>
-		  </div>
-		</footer>
-
-	</main>
+    <footer class="group mt-20 py-10 text-base text-center flex-1">
+      Made with <span
+        class="group-hover:text-red-600 transition-all duration-300">♥️</span
+      > by <a class="link" href="https://github.com/carlosqsilva"
+        >Carlos Silva</a
+      > in 🇧🇷
+      <div class="flex justify-center mt-10">
+        <a href="https://www.buymeacoffee.com/carlossilva" target="_blank">
+          <img
+            src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png"
+            alt="Buy Me A Coffee"
+            style="height: 48px !important;width: 180px !important;"
+            class="group-hover:scale-110 duration-500 transition-transform"
+          />
+        </a>
+      </div>
+    </footer>
+  </main>
 </Layout>
 
 <style>
-	header h1 {
-		font-size: 4rem;
-		font-weight: 700;
-		line-height: 1;
-		text-align: center;
-		margin-bottom: 1em;
-	}
-	.text-gradient {
-		background-image: var(--accent-gradient);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-size: 400%;
-		background-position: 0%;
-	}
-
+  header h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    margin-bottom: 1em;
+  }
+  .text-gradient {
+    background-image: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 400%;
+    background-position: 0%;
+  }
 </style>

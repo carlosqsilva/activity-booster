@@ -17,3 +17,19 @@ export function isWeekend(date: Date) {
   const day = date.getDay();
   return day === 0 || day === 6;
 }
+
+export function saveAs(blob: Blob, fileName: string) {
+  const blobUrl = URL.createObjectURL(blob);
+  const el = document.createElement("a");
+  el.href = blobUrl;
+  el.download = fileName;
+
+  document.body.appendChild(el);
+
+  el.dispatchEvent(new MouseEvent("click"));
+
+  setTimeout(() => {
+    document.body.removeChild(el);
+    URL.revokeObjectURL(blobUrl);
+  }, 1000);
+}

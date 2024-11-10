@@ -11,18 +11,56 @@ import {
   addHours,
   addMinutes,
 } from "date-fns";
-import { createStore } from "solid-js/store";
+import { createStore, unwrap } from "solid-js/store";
 
 import { letterMap } from "./utils";
-import { randomInt } from "../../utils";
+import { defined, randomInt, saveAs } from "../../utils";
 
-export interface CreatePointsOptions {
+export interface CreatePointsCommon {
   noWeekends: boolean;
   maxCommits: number;
   expandNWeeks?: number;
   hasMessage: boolean;
+  invertColor: boolean;
   message: string;
 }
+
+export interface RepoConfig {
+  userName: string;
+  userEmail: string;
+  repoUrl: string | null;
+}
+
+export type StateType = "idle" | "processing";
+
+interface Store extends CreatePointsCommon, RepoConfig {
+  state: StateType;
+  progress: number;
+}
+
+const initialState = ((): Store => ({
+  hasMessage: false,
+  invertColor: false,
+  noWeekends: false,
+  maxCommits: 10,
+  message: "",
+  userName: "",
+  userEmail: "",
+  repoUrl: null,
+  state: "idle",
+  progress: 0,
+}))();
+
+export const [store, setStore] = createStore<Store>(initialState);
+
+export interface Point {
+  date: number;
+  commits: number;
+}
+
+export const [points, setPoints] = createStore<{ data: Point[] }>({
+  data: createPoints(),
+});
 
 function shouldCommit(dayBefore: boolean, weekBefore: boolean) {
   if (!dayBefore || !weekBefore) return true;
@@ -31,62 +69,54 @@ function shouldCommit(dayBefore: boolean, weekBefore: boolean) {
 
 export const MESSAGE_COMMITS = 5;
 
-function createEmptyPoints(options: Required<CreatePointsOptions>) {
+function createEmptyPoints(options: CreatePointsCommon) {
   const currentDate = new UTCDate();
   const initialDate = startOfWeek(subDays(currentDate, 365));
   let finalDate = new UTCDate();
-  if (options.expandNWeeks > 0) {
+  if (defined(options.expandNWeeks) && options.expandNWeeks > 0) {
     finalDate = endOfWeek(addWeeks(finalDate, options.expandNWeeks));
   }
   const totalLength = differenceInDays(finalDate, initialDate);
 
   const points: Point[] = [];
   for (let amount = 0; amount <= totalLength; amount++) {
-    const date = addDays(initialDate, amount);
+    const date = addDays(initialDate, amount).getTime();
     points.push({
       date,
-      commits: 0,
+      commits: options.invertColor ? MESSAGE_COMMITS : 0,
     });
   }
   return points;
 }
 
-export function createPoints(
-  options: CreatePointsOptions = {
-    maxCommits: 10,
-    noWeekends: false,
-    expandNWeeks: 0,
-    hasMessage: false,
-    message: "",
-  },
-) {
-  const points = createEmptyPoints(options);
+function writeMessage(points: Point[], options: CreatePointsCommon) {
+  const letters = options.message.trimEnd().toLowerCase().split("") ?? [];
+  if (letters.length === 0) return points;
 
-  if (options.hasMessage) {
-    const letters = options.message?.trimEnd().toLowerCase().split("") ?? [];
-    if (letters.length === 0) return points;
+  let offset = 7;
+  for (const letter of letters) {
+    const positions = letterMap[letter];
 
-    let offset = 7;
-    for (const letter of letters) {
-      const positions = letterMap[letter];
-
-      if (!positions) continue;
-      if (positions === "empty") {
-        offset += 3 * 7;
-        continue;
-      }
-
-      for (const position of positions) {
-        const newPosition = offset + position;
-        if (newPosition > points.length - 1) break;
-        points[offset + position].commits = MESSAGE_COMMITS;
-      }
-      offset += 6 * 7;
+    if (!positions) continue;
+    if (positions === "empty") {
+      offset += 3 * 7;
+      continue;
     }
 
-    return points;
+    for (const position of positions) {
+      const newPosition = offset + position;
+      if (newPosition > points.length - 1) break;
+      points[offset + position].commits = options.invertColor
+        ? 0
+        : MESSAGE_COMMITS;
+    }
+    offset += 6 * 7;
   }
 
+  return points;
+}
+
+function randomizeValues(points: Point[], options: CreatePointsCommon) {
   let shouldCommitToday = true;
   for (let index = 0; index < points.length; index++) {
     shouldCommitToday = shouldCommit(
@@ -106,39 +136,17 @@ export function createPoints(
   return points;
 }
 
-interface Store {
-  noWeekends: boolean;
-  maxCommits: number;
-  userName: string;
-  userEmail: string;
-  repoUrl: string | null;
-  hasMessage: boolean;
-  message: string;
+export function createPoints(options: CreatePointsCommon = initialState) {
+  const points = createEmptyPoints(options);
+
+  if (options.hasMessage) {
+    return writeMessage(points, options);
+  }
+
+  return randomizeValues(points, options);
 }
 
-export const [store, setStore] = createStore<Store>({
-  hasMessage: false,
-  message: "",
-  noWeekends: false,
-  maxCommits: 10,
-  userName: "",
-  userEmail: "",
-  repoUrl: null,
-});
-
-interface Point {
-  date: Date;
-  commits: number;
-}
-
-export const [points, setPoints] = createStore<{ data: Point[] }>({
-  data: createPoints(),
-});
-
-export async function createRepo(
-  data: Point[],
-  info: { repoUrl: string | null; userName: string; userEmail: string },
-) {
+export async function createRepo(data: Point[], config: RepoConfig) {
   // biome-ignore lint/style/useNodejsImportProtocol: <explanation>
   const { Buffer } = await import("buffer");
   window.Buffer = Buffer;
@@ -147,9 +155,6 @@ export async function createRepo(
   const { configureSingle, default: fs } = await import("@zenfs/core");
   const { WebStorage } = await import("@zenfs/dom");
 
-  const dir = "/";
-  const file = "README.md";
-
   sessionStorage.clear();
 
   await configureSingle({
@@ -157,17 +162,20 @@ export async function createRepo(
     storage: sessionStorage,
   });
 
+  const dir = "/";
+  const file = "README.md";
+
+  performance.mark("start");
+
   await git.init({ fs, dir, defaultBranch: "main" });
-  if (info.repoUrl) {
-    await git.addRemote({ fs, dir, remote: "origin", url: info.repoUrl });
+  if (config.repoUrl) {
+    await git.addRemote({ fs, dir, remote: "origin", url: config.repoUrl });
   }
 
   let content = ".";
   const contribute = async (date: Date) => {
     content = content === "" ? "." : "";
-
     fs.writeFile(file, content);
-
     const timestamp = Math.floor(new UTCDate(date).getTime() / 1000);
     await git.add({ fs, dir, filepath: file });
     await git.commit({
@@ -177,18 +185,24 @@ export async function createRepo(
       author: {
         timestamp,
         timezoneOffset: 0,
-        email: info.userEmail,
-        name: info.userName,
+        email: config.userEmail,
+        name: config.userName,
       },
     });
   };
 
-  for (const point of data) {
-    if (point.commits === 0) continue;
+  const total = data.length;
+  for (let idx = 0; idx < total; idx++) {
+    if (data[idx].commits === 0) continue;
+
+    const point = data[idx];
     const date = addHours(point.date, 8);
+    // const date = addHours(point.date, 8);
     for (let idx = 0; idx < point.commits; idx++) {
       await contribute(addMinutes(date, idx + 10));
     }
+
+    setStore("progress", idx / total);
   }
 
   const { BlobWriter, ZipWriter, Data64URIReader } = await import(
@@ -197,7 +211,6 @@ export async function createRepo(
 
   const zipWriter = new ZipWriter(new BlobWriter("appication/zip"));
   const filePaths = await fs.promises.readdir(dir, { recursive: true });
-
   for (const filePath of filePaths) {
     const stats = await fs.promises.stat(filePath);
     if (stats.isDirectory()) continue;
@@ -208,21 +221,9 @@ export async function createRepo(
   }
 
   const blob = await zipWriter.close();
+
+  performance.mark("end");
+  console.log(performance.measure("duration", "start", "end"));
+
   saveAs(blob, "activity-repo.zip");
-}
-
-export function saveAs(blob: Blob, fileName: string) {
-  const blobUrl = URL.createObjectURL(blob);
-  const el = document.createElement("a");
-  el.href = blobUrl;
-  el.download = fileName;
-
-  document.body.appendChild(el);
-
-  el.dispatchEvent(new MouseEvent("click"));
-
-  setTimeout(() => {
-    document.body.removeChild(el);
-    URL.revokeObjectURL(blobUrl);
-  }, 1000);
 }

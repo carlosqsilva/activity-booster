@@ -8,6 +8,7 @@ interface InputTextProps<T extends string> {
   label?: JSX.Element;
   helpText?: JSX.Element;
   required?: boolean;
+  disabled?: boolean;
 }
 
 export const InputText: Component<InputTextProps<any>> = (props) => {
@@ -25,6 +26,7 @@ export const InputText: Component<InputTextProps<any>> = (props) => {
         placeholder={props.placeHolder}
         name={props.name}
         onInput={(ev) => props.onChange(props.name, ev.target.value)}
+        disabled={props.disabled}
       />
       <Show when={defined(props.helpText)}>
         <div class="label">

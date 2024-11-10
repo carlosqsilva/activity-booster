@@ -7,7 +7,7 @@ export default {
   plugins: [require("@tailwindcss/typography"), require("daisyui")],
   daisyui: {
     themes: [
-      "synthwave",
+      // "synthwave",
       {
         custom: {
           ...require("daisyui/src/theming/themes").synthwave,
