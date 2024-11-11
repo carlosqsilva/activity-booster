@@ -1,4 +1,4 @@
-import { createEffect, For, Show } from "solid-js";
+import { createEffect, For, onMount, Show } from "solid-js";
 import debounce from "debounce";
 
 import {
@@ -20,6 +20,10 @@ import { createColorRangeFunction } from "./utils";
 import { format } from "date-fns";
 
 export function App() {
+  onMount(() => {
+    document.querySelector("main span#loading")?.classList.add("hidden");
+  });
+
   return (
     <div class="flex flex-col gap-4">
       <div class="-ml-2">

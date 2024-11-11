@@ -4,14 +4,16 @@ import { App } from "../components/ContributeGraph";
 ---
 
 <Layout title="Activity Booster">
-  <!-- <a class="btn btn-lg">Login with Github</a> -->
-
   <header class="text-center mt-10">
     <h1>Activity <span class="text-gradient">Booster</span></h1>
   </header>
 
   <main class="container max-w-3xl mx-auto flex flex-col">
-    <App client:only="solidjs" />
+    <span
+      id="loading"
+      class="loading loading-dots loading-lg mx-auto text-[#38b000]"></span>
+
+    <App client:only="solid" />
 
     <article class="prose max-w-none prose-h2:my-4 mt-14">
       <h2>How it works?</h2>
@@ -23,25 +25,24 @@ import { App } from "../components/ContributeGraph";
       </p>
       <h2>How to push to my Github account?</h2>
       <p>
-        First create and download your repo activity archive, and follow the
-        steps bellow:
+        To easily create and push a new private repository to your GitHub
+        account, follow these steps using the GitHub CLI tool.
       </p>
 
       <div class="mockup-code not-prose">
         <pre data-prefix="$"><code>unzip activity-repo.zip -d REPO</code></pre>
         <pre data-prefix="$"><code>cd REPO</code></pre>
+        <pre data-prefix="$"><code>gh auth login</code></pre>
         <pre
           data-prefix="$"><code>gh repo create REPO --private --push --source .</code></pre>
       </div>
 
       <h2>Why is not working?</h2>
       <p>
-        If you follow the steps above and made the repository private you need
-        to enable <b>Private contributions</b>,in your Github profile, go to <b
-          >Your Profile</b
-        > &gt <b>Contribution settings</b> &gt enable <b
-          >Private contributions</b
-        >.
+        If you have followed the steps above and made the repository private,
+        you need to enable private contributions in your GitHub profile. To do
+        this, go to your profile, select <b>Contribution settings</b>, and then
+        enable <b>Private contributions</b>.
       </p>
     </article>
 
