@@ -10,11 +10,14 @@ import {
   createRepo,
   MESSAGE_COMMITS,
   type CreatePointsCommon,
+  MIN_COMMITS,
+  MAX_COMMITS,
 } from "./state";
 import { InputRange } from "./InputRange";
 import { InputCheckbox } from "./InputCheckbox";
 import { InputText } from "./InputText";
 import { createColorRangeFunction } from "./utils";
+import { format } from "date-fns";
 
 export function App() {
   return (
@@ -35,6 +38,7 @@ function Form() {
 
   createEffect(() => {
     debounceUpdate({
+      hasCustom: store.hasCustom,
       hasMessage: store.hasMessage,
       message: store.message,
       invertColor: store.invertColor,
@@ -56,14 +60,35 @@ function Form() {
   const isProcessing = () => store.state === "processing";
 
   return (
-    <form class="flex flex-col gap-5" onSubmit={handleSubmit}>
-      <InputCheckbox
-        label="Write a Custom Message"
-        name="hasMessage"
-        checked={store.hasMessage}
-        onChange={(name, state) => setStore(name, state)}
-        disabled={isProcessing()}
-      />
+    <form class="flex flex-col gap-5 px-2 md:px-0" onSubmit={handleSubmit}>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <InputCheckbox
+          label="Write message"
+          name="hasMessage"
+          checked={store.hasMessage}
+          onChange={(name, state) => {
+            if (state) setStore(name, state);
+            else setStore({ hasMessage: state, invertColor: false });
+          }}
+          disabled={store.hasCustom || isProcessing()}
+        />
+
+        <InputCheckbox
+          label="Paint graph"
+          name="hasCustom"
+          checked={store.hasCustom}
+          disabled={store.hasMessage || isProcessing()}
+          onChange={(name, state) => setStore(name, state)}
+        />
+
+        <InputCheckbox
+          label="No Commits on Weekends"
+          name="noWeekends"
+          checked={store.noWeekends}
+          disabled={store.hasMessage || store.hasCustom || isProcessing()}
+          onChange={(name, state) => setStore(name, state)}
+        />
+      </div>
 
       <Show when={store.hasMessage}>
         <InputText
@@ -83,17 +108,12 @@ function Form() {
         </div>
       </Show>
 
-      <InputCheckbox
-        label="No Commits on Weekends"
-        name="noWeekends"
-        disabled={store.hasMessage}
-        checked={store.noWeekends}
-        onChange={(name, state) => setStore(name, state)}
-      />
-
       <InputRange
+        min={MIN_COMMITS}
+        max={MAX_COMMITS}
+        value={store.maxCommits}
         name="maxCommits"
-        disabled={store.hasMessage || isProcessing()}
+        disabled={store.hasMessage || store.hasCustom || isProcessing()}
         onChange={(name, value) => setStore(name, value)}
         label={
           <>
@@ -103,7 +123,7 @@ function Form() {
         helpText={<>☝️High values takes longer export</>}
       />
 
-      <div class="flex gap-4">
+      <div class="flex flex-col md:flex-row gap-4">
         <InputText
           required
           name="userName"
@@ -131,7 +151,7 @@ function Form() {
         />
       </div>
 
-      <InputText
+      {/* <InputText
         name="repository"
         onChange={(name, value) => setStore(name, value)}
         placeHolder="ex: git@github.com:<USERNAME>/<REPO>.git"
@@ -142,7 +162,7 @@ function Form() {
             <div class="badge badge-secondary">Optional</div>
           </>
         }
-      />
+      /> */}
 
       <div class="flex gap-4">
         <button
@@ -166,7 +186,7 @@ function Form() {
         <button
           class="btn btn-ghost"
           type="button"
-          disabled={store.hasMessage || isProcessing()}
+          disabled={store.hasMessage || store.hasCustom || isProcessing()}
           onClick={() => {
             debounceUpdate(store);
             debounceUpdate.flush();
@@ -193,9 +213,14 @@ function Progress() {
 }
 
 function ContributionGraph() {
-  let getColor = (_: number): string | null => "#38b000";
+  let getColor = ((_) => "#38b000") as ReturnType<
+    typeof createColorRangeFunction
+  >;
+
   createEffect(() => {
-    const maxCommits = store.hasMessage ? MESSAGE_COMMITS : store.maxCommits;
+    let maxCommits = store.maxCommits;
+    if (store.hasMessage) maxCommits = MESSAGE_COMMITS;
+    if (store.hasCustom) maxCommits = MAX_COMMITS;
     getColor = createColorRangeFunction(1, maxCommits, [
       "#008000",
       "#38b000",
@@ -203,25 +228,50 @@ function ContributionGraph() {
     ]);
   });
 
+  const handleClick = (idx: number) => {
+    if (!store.hasCustom) return;
+    setPoints("data", idx, "commits", (commit) => {
+      const value = commit + MESSAGE_COMMITS;
+      return Math.min(Math.max(value, MIN_COMMITS), MAX_COMMITS);
+    });
+  };
+
   return (
-    <div class="grid grid-flow-col grid-rows-7 gap-[2px] font-mono">
-      <div />
-      <div class="leading-3 text-xs text-right">M</div>
-      <div />
-      <div class="leading-3 text-xs text-right">W</div>
-      <div />
-      <div class="leading-3 text-xs text-right">F</div>
-      <div />
-      <For each={points.data}>
-        {(item) => (
-          <div class="tooltip" data-tip={item.date}>
-            <div
-              class="h-[10px] w-[10px] rounded-sm bg-gray-200/20"
-              style={{ background: getColor(item.commits) ?? undefined }}
-            />
+    <>
+      <div class="grid grid-flow-col grid-rows-7 gap-[2px] font-mono relative">
+        <Show when={store.hasCustom}>
+          <div class="animate-pulse text-center absolute text-sm right-0 left-0 -top-5">
+            Click on the graph
           </div>
-        )}
-      </For>
-    </div>
+        </Show>
+
+        <div />
+        <div class="leading-3 text-xs text-right">M</div>
+        <div />
+        <div class="leading-3 text-xs text-right">W</div>
+        <div />
+        <div class="leading-3 text-xs text-right">F</div>
+        <div />
+        <For each={points.data}>
+          {(item, index) => (
+            <div
+              class="tooltip"
+              data-tip={
+                item.commits === 0
+                  ? `No contributions on ${format(item.date, "MMMM do")}.`
+                  : `${item.commits} contributions on ${format(item.date, "MMMM do")}.`
+              }
+            >
+              <div
+                onClick={[handleClick, index()]}
+                onKeyPress={[handleClick, index]}
+                class="h-[10px] w-[10px] rounded-sm bg-gray-200/20"
+                style={{ background: getColor(item.commits) }}
+              />
+            </div>
+          )}
+        </For>
+      </div>
+    </>
   );
 }

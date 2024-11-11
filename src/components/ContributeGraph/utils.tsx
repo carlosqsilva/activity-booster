@@ -18,7 +18,7 @@ export function createColorRangeFunction(
 
   return (value: number) => {
     if (value < min || value > max) {
-      return null;
+      return undefined;
     }
 
     const segment = segments.find(

@@ -7,6 +7,9 @@ interface InputRangeProps<T extends string>
   onChange?: (name: T, value: number) => void;
   label?: JSX.Element;
   helpText?: JSX.Element;
+  min: number;
+  max: number;
+  value: number;
 }
 
 export const InputRange: Component<InputRangeProps<any>> = (props) => {
@@ -21,11 +24,11 @@ export const InputRange: Component<InputRangeProps<any>> = (props) => {
 
       <input
         type="range"
-        min="1"
-        max="30"
-        value="10"
-        class="range range-success disabled:opacity-15 disabled:cursor-not-allowed"
+        min={props.min}
+        max={props.max}
+        value={props.value}
         disabled={props.disabled}
+        class="range range-success disabled:opacity-15 disabled:cursor-not-allowed"
         onInput={(ev) => props.onChange?.(props.name, Number(ev.target.value))}
       />
       <Show when={defined(props.helpText)}>

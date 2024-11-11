@@ -11,24 +11,25 @@ import {
   addHours,
   addMinutes,
 } from "date-fns";
-import { createStore, unwrap } from "solid-js/store";
+import { createStore } from "solid-js/store";
 
 import { letterMap } from "./utils";
 import { defined, randomInt, saveAs } from "../../utils";
 
 export interface CreatePointsCommon {
+  hasMessage: boolean;
   noWeekends: boolean;
+  invertColor: boolean;
+  hasCustom: boolean;
   maxCommits: number;
   expandNWeeks?: number;
-  hasMessage: boolean;
-  invertColor: boolean;
   message: string;
 }
 
 export interface RepoConfig {
   userName: string;
   userEmail: string;
-  repoUrl: string | null;
+  // repoUrl: string | null;
 }
 
 export type StateType = "idle" | "processing";
@@ -42,11 +43,12 @@ const initialState = ((): Store => ({
   hasMessage: false,
   invertColor: false,
   noWeekends: false,
+  hasCustom: false,
   maxCommits: 10,
   message: "",
   userName: "",
   userEmail: "",
-  repoUrl: null,
+  // repoUrl: null,
   state: "idle",
   progress: 0,
 }))();
@@ -54,7 +56,7 @@ const initialState = ((): Store => ({
 export const [store, setStore] = createStore<Store>(initialState);
 
 export interface Point {
-  date: number;
+  date: Date;
   commits: number;
 }
 
@@ -68,6 +70,8 @@ function shouldCommit(dayBefore: boolean, weekBefore: boolean) {
 }
 
 export const MESSAGE_COMMITS = 5;
+export const MIN_COMMITS = 1;
+export const MAX_COMMITS = 30;
 
 function createEmptyPoints(options: CreatePointsCommon) {
   const currentDate = new UTCDate();
@@ -80,7 +84,7 @@ function createEmptyPoints(options: CreatePointsCommon) {
 
   const points: Point[] = [];
   for (let amount = 0; amount <= totalLength; amount++) {
-    const date = addDays(initialDate, amount).getTime();
+    const date = addDays(initialDate, amount);
     points.push({
       date,
       commits: options.invertColor ? MESSAGE_COMMITS : 0,
@@ -99,7 +103,7 @@ function writeMessage(points: Point[], options: CreatePointsCommon) {
 
     if (!positions) continue;
     if (positions === "empty") {
-      offset += 3 * 7;
+      offset += 2 * 7;
       continue;
     }
 
@@ -139,6 +143,10 @@ function randomizeValues(points: Point[], options: CreatePointsCommon) {
 export function createPoints(options: CreatePointsCommon = initialState) {
   const points = createEmptyPoints(options);
 
+  if (options.hasCustom) {
+    return points;
+  }
+
   if (options.hasMessage) {
     return writeMessage(points, options);
   }
@@ -168,9 +176,9 @@ export async function createRepo(data: Point[], config: RepoConfig) {
   performance.mark("start");
 
   await git.init({ fs, dir, defaultBranch: "main" });
-  if (config.repoUrl) {
-    await git.addRemote({ fs, dir, remote: "origin", url: config.repoUrl });
-  }
+  // if (config.repoUrl) {
+  //   await git.addRemote({ fs, dir, remote: "origin", url: config.repoUrl });
+  // }
 
   let content = ".";
   const contribute = async (date: Date) => {
