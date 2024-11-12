@@ -18,6 +18,7 @@ import { InputCheckbox } from "./InputCheckbox";
 import { InputText } from "./InputText";
 import { createColorRangeFunction } from "./utils";
 import { format } from "date-fns";
+import { clampValue } from "../../utils";
 
 export function App() {
   onMount(() => {
@@ -235,14 +236,15 @@ function ContributionGraph() {
   const handleClick = (idx: number) => {
     if (!store.hasCustom) return;
     setPoints("data", idx, "commits", (commit) => {
-      const value = commit + MESSAGE_COMMITS;
-      return Math.min(Math.max(value, MIN_COMMITS), MAX_COMMITS);
+      let value = commit + MESSAGE_COMMITS;
+      if (value > MAX_COMMITS) value = 0;
+      return clampValue(0, MAX_COMMITS, value);
     });
   };
 
   return (
     <>
-      <div class="grid grid-flow-col grid-rows-7 gap-[2px] font-mono relative">
+      <div class="grid grid-flow-col grid-rows-7 gap-[1px] font-mono relative">
         <Show when={store.hasCustom}>
           <div class="animate-pulse text-center absolute text-sm right-0 left-0 -top-5">
             Click on the graph
@@ -269,7 +271,8 @@ function ContributionGraph() {
               <div
                 onClick={[handleClick, index()]}
                 onKeyPress={[handleClick, index]}
-                class="h-[10px] w-[10px] rounded-sm bg-gray-200/20"
+                class="h-[12px] w-[12px] rounded-sm bg-gray-200/20"
+                classList={{ "cursor-pointer": store.hasCustom }}
                 style={{ background: getColor(item.commits) }}
               />
             </div>
