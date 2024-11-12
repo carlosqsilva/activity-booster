@@ -65,8 +65,8 @@ function Form() {
   const isProcessing = () => store.state === "processing";
 
   return (
-    <form class="flex flex-col gap-5 px-2 md:px-0" onSubmit={handleSubmit}>
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <form class="flex flex-col gap-2 md:gap-5" onSubmit={handleSubmit}>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
         <InputCheckbox
           label="Write message"
           name="hasMessage"
@@ -169,7 +169,7 @@ function Form() {
         }
       /> */}
 
-      <div class="flex gap-4">
+      <div class="flex gap-4 mt-8">
         <button
           type="submit"
           class="btn btn-success btn-wide flex-1 relative"
@@ -244,7 +244,7 @@ function ContributionGraph() {
 
   return (
     <>
-      <div class="grid grid-flow-col grid-rows-7 gap-[1px] font-mono relative">
+      <div class="grid grid-flow-col grid-rows-7 gap-[1px] font-mono relative overflow-x-scroll">
         <Show when={store.hasCustom}>
           <div class="animate-pulse text-center absolute text-sm right-0 left-0 -top-5">
             Click on the graph
