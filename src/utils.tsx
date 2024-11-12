@@ -9,6 +9,10 @@ export function defined<T>(item: T): item is Exclude<T, null | undefined> {
   return item !== undefined && item !== null;
 }
 
+export function clampValue(min: number, max: number, value: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
 export function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
